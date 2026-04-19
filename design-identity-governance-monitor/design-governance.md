@@ -273,9 +273,60 @@ The module uses **Tailwind Traders** with **App1** and **App2** (each with web t
 
 **Unit:** [Design for resource tags](https://learn.microsoft.com/en-us/training/modules/design-governance/6-design-for-resource-tags)
 
-- **Summary:**
-- **Tagging strategy (cost center, env, owner, etc.):**
-- **Remember for the exam:**
+Background: [Tag resources](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources).
+
+### In plain terms
+
+**Resource tags** are **name–value** metadata on Azure resources. They help you **organize**, **search**, **report cost**, and **drive automation**—but only if you use them **consistently**.
+
+**Before a tagging project:** Decide **goals** (better search? cost chargeback? automation inputs?) so tags stay purposeful, not random.
+
+### Things to know (characteristics)
+
+| Topic | Detail |
+|--------|--------|
+| **Shape** | A tag is a **name = value** pair (for example `env = production`). Values can hold multiple concepts in text if your standard allows (example from the module: `env = dev, test`). |
+| **Where tags attach** | Tags can be set on **individual resources**, **resource groups**, and **subscriptions**. |
+| **Management** | Tags can be **added, changed, or removed** via **portal**, **PowerShell**, **Azure CLI**, **ARM templates**, **Bicep**, **REST**, etc. |
+| **Inheritance (critical)** | Tags on a **resource group** are **not** automatically **inherited** by resources inside that RG. Each resource has its **own** tags unless you copy or enforce via **policy** / automation. |
+
+### Things to consider (design)
+
+- **Taxonomy:** Align names and values with **department language**, **compliance** terms, **cost** reporting, **locations**, **confidentiality**—whatever your org already uses.
+- **IT-aligned vs business-aligned** (often **both**):
+
+| Alignment | Focus | Example angle (from module) |
+|-----------|--------|------------------------------|
+| **IT-aligned** | Workload, app, function, **environment**—easier **operations** and monitoring. | Capacity/usage patterns (e.g. printers busy 80% of time → capacity decisions). |
+| **Business-aligned** | **Ownership**, **cost responsibility**, **business criticality**, **value** of IT to the business. | Tie spend to outcomes (e.g. marketing print drove revenue → investment story). |
+
+Many orgs move **toward business-aligned** tagging over time.
+
+- **Five tag “types”** (categories to plan for—not exclusive buckets):
+
+| Type | Role | Example pairs (from module) |
+|------|------|------------------------------|
+| **Functional** | Purpose inside a workload—**app**, **tier**, **env**, stack. | `app`, `tier`, `webserver`, `env` (prod/dev/staging). |
+| **Classification** | **Usage** / policy hooks—confidentiality, SLA. | `confidentiality`, `SLA`. |
+| **Accounting** | **Billing** / allocation—department, program, region. | `department`, `program`, `region`. |
+| **Partnership** | **People** beyond IT—owners, contacts, stakeholders. | `owner`, `contactalias`, `stakeholders`. |
+| **Purpose** | **Business** process, impact, investment decisions. | `businessprocess`, `businessimpact`, `revenueimpact`. |
+
+- **Start small:** Pilot **a few** critical tags; prove value before expanding the taxonomy.
+- **Enforce with Azure Policy:** Tagging fails without **consistency**—use Policy to **require** tags on create, **inherit** tags from RG where policies support it (for example “inherit tag from resource group”), or **remediate** drift.
+- **Not everything needs every tag:** Example from the module: only **mission-critical** resources might need an `Impact` tag; **untagged** resources are then implicitly **non–mission-critical** by policy.
+
+**Stakeholders:** Good tagging needs input from **finance**, **apps**, **security**, not only central IT.
+
+### Your notes (optional)
+
+- **Our first three tags** (name + who owns the value):
+
+### Remember for the exam
+
+- Tags = **metadata** (**name/value**); **RG tags do not inherit** to child resources.
+- Design dimensions: **taxonomy**, **IT vs business** alignment, **five** tag categories, **Policy** for **enforcement** and **consistency**.
+- **Start minimal**, **scale** the tag model; not every resource needs **every** tag.
 
 ---
 
@@ -283,19 +334,113 @@ The module uses **Tailwind Traders** with **App1** and **App2** (each with web t
 
 **Unit:** [Design for Azure Policy](https://learn.microsoft.com/en-us/training/modules/design-governance/7-design-for-azure-policy)
 
-- **Summary:**
-- **Policy vs RBAC (what each controls):**
-- **Remember for the exam:**
+Background: [Azure Policy overview](https://learn.microsoft.com/en-us/azure/governance/policy/overview), [built-in policies](https://learn.microsoft.com/en-us/azure/governance/policy/samples/built-in-policies), [built-in initiatives](https://learn.microsoft.com/en-us/azure/governance/policy/samples/built-in-initiatives).
+
+### In plain terms
+
+**Azure Policy** helps you **define**, **assign**, and **manage** rules so **resource configurations** match **organizational standards**—by **blocking** bad changes, **auditing**, **remediating**, or **deploying** related fixes.
+
+### Things to know (characteristics)
+
+| Topic | Detail |
+|--------|--------|
+| **Definitions** | A **policy** is one rule; an **initiative** bundles **multiple** related policies (easier to assign a standard at once). Many **built-in** definitions exist. |
+| **Inheritance** | Policy assignments **flow down** the hierarchy (management group → subscription → resource group → resource), consistent with earlier units. |
+| **Scope** | Assign at **management group**, **subscription**, **resource group**, or **resource** (as supported). |
+| **What is evaluated** | Resources in Azure and **Azure Arc–enabled** resources (supported **resource types** hosted outside Azure). |
+| **Visibility** | Non-compliant resources surface in **compliance** views. |
+| **Enforcement** | Can **prevent** non-compliant **creates/updates**, and support **automatic remediation** (for example tag fixes, **DeployIfNotExists** patterns). |
+| **DevOps** | Integrates with **Azure Pipelines** for **pre-** and **post-deployment** policy checks. |
+
+### Things to consider (design and operations)
+
+- **Compliance dashboard:** Use it for an **aggregated** view, **drill-down** per resource/level, **bulk remediation** for existing resources, and paths toward fixing drift **faster** (module context: Tailwind Traders).
+- **When evaluation runs** (not always instant—plan for **delay**):
+
+  - Resource **created**, **deleted**, or **updated** in a scope that has assignments
+  - Policy or initiative **newly assigned** to a scope
+  - An assignment is **updated**
+  - **Scheduled** compliance scan (**about every 24 hours**)
+
+- **Responses to non-compliance** (depends on **effect** and design): **Deny** the change; **Audit** / log; **Modify** / **Append** behavior; **DeployIfNotExists** or related patterns to bring in compliant pieces.
+
+- **Remediation:** Especially useful for **tags**—Policy can **apply** or **reapply** tags when someone removes them (example: enforce a `Location`-style tag on resources in a resource group).
+
+- **Policy vs RBAC (module wording—use together):**
+
+| | **Azure Policy** | **Azure RBAC** |
+|---|------------------|----------------|
+| **Question it answers** | Is the **resource configuration** allowed (state **compliance**)? | **Who** may **invoke** Azure control-plane actions? |
+| **Depends on user?** | Evaluates **outcome**—**who** changed it is secondary to whether the **result** matches the rule. | Controls **identity** access and **actions** at a scope. |
+| **Together** | Even if RBAC **allows** an action, Policy can **deny** the **result** (non-compliant create/update). |
+
+### “Control resource access” (identity lifecycle—module closing)
+
+After identity basics, think through **what** identities may reach, **how** access is enforced (**RBAC**, **Conditional Access**), **monitoring** (**Entra ID Protection**), and **reviews** (**access reviews**). Policy complements this by governing **resource state**, not replacing **who** is authenticated.
+
+### Your notes (optional)
+
+- **Policies we’d assign at Production MG vs at app RG:**
+
+### Remember for the exam
+
+- **Initiative** = **group** of policies; **built-ins** are a starting point.
+- **Evaluation triggers** include CRUD in scope, assignment changes, and **~24h** cycle.
+- **Policy** = **compliance / resource state**; **RBAC** = **who can act**; both layers used together.
+- **Remediation** + **tagging** are a classic exam pairing.
 
 ---
 
 ## 8. Design for role-based access control (RBAC)
 
-**Unit:** [Design for RBAC](https://learn.microsoft.com/en-us/training/modules/design-governance/8-design-for-role-based-access-control)
+**Unit:** [Design for role-based access control (RBAC)](https://learn.microsoft.com/en-us/training/modules/design-governance/8-design-for-role-based-access-control)
 
-- **Summary:**
-- **Scope:** management group / subscription / RG / resource
-- **Remember for the exam:**
+Background: [Azure RBAC overview](https://learn.microsoft.com/en-us/azure/role-based-access-control/overview), [Custom roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles).
+
+### In plain terms
+
+**Azure RBAC** decides whether an identity **may invoke** Azure **control-plane** actions on resources. Each request is evaluated: **denied** (no permission), or **allowed** per **role assignments**.
+
+The module stresses an **allow model**: a **role** lists **allowed** actions; the identity gets **only** what those roles grant (for example **read** without an explicit **write** permission does not grant write).
+
+### Example scenarios (Tailwind-style)
+
+- One user manages **VMs** in a subscription; another manages **virtual networks**.
+- A **database administrator** **group** manages **SQL** resources.
+- A user manages **all** resources in **one** **resource group** (VMs, web apps, subnets, etc.).
+- An **application** (service principal / managed identity) accesses resources in **one** resource group.
+
+### Things to consider (design)
+
+- **Scope at the broadest level that still matches the need:** Define **roles** (built-in or custom), assign to **users, groups, or service principals**, and attach at **management group**, **subscription**, **resource group**, or **resource**. The module recommends assigning at the **highest scope that satisfies the requirement** so you avoid unnecessary fragmentation (pair with **least privilege** on the **role** itself).
+
+- **Least privilege per person:** Grant the **minimum** role + **narrowest** scope needed—reduces blast radius if an identity is compromised; clarifies ownership.
+
+- **Prefer roles on groups:** Assign to **Entra ID groups** instead of many **individual** user assignments when possible—fewer assignments to manage.
+
+- **Policy + RBAC:** Use **both**—Policy for **resource properties** / compliance; RBAC for **who** may **act**. See comparison below.
+
+| | **Azure Policy** | **Azure RBAC** |
+|---|------------------|----------------|
+| **Description** | Rules so resources stay **compliant** with standards. | **Authorization** for **who** can do **what** on which **scope**. |
+| **Main focus** | **Properties** / configuration of resources. | **Access** to resources and actions. |
+| **Implementation** | Assign **policies** / **initiatives**. | Assign **roles** at scopes. |
+| **Default access** | By default, policy rules are set to **allow** (per module wording—contrast with **Deny** / audit **effects** on specific assignments). | By default, all access for all users is **denied** until **RBAC** grants it. |
+
+- **Custom roles** when **built-in** roles are too broad or too narrow—[custom roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles) can be reused across **subscriptions** in the **same** Microsoft Entra tenant.
+
+- **Overlapping assignments:** RBAC is **additive** for **allows**—effective permissions ≈ **union** of all applicable role assignments. Example from the module: **Contributor** at **subscription** + **Reader** on a **resource group** in that subscription → **Contributor** already includes **read**; the extra **Reader** on the RG **does not change** the effective access in that case.
+
+### Your notes (optional)
+
+- **Roles we’d use** for platform team vs app team vs read-only auditor:
+
+### Remember for the exam
+
+- RBAC = **allow** model for **roles**; **no** permission without an assignment (for allows).
+- Assign at **appropriate scope**; **groups** over one-off user assignments; **least privilege**.
+- **Policy** = **what** resources look like; **RBAC** = **who** can change them—**combine** both.
+- **Overlapping** roles: **additive**; redundant **Reader** under **Contributor** adds nothing new.
 
 ---
 
@@ -303,9 +448,45 @@ The module uses **Tailwind Traders** with **App1** and **App2** (each with web t
 
 **Unit:** [Design for Azure landing zones](https://learn.microsoft.com/en-us/training/modules/design-governance/9-design-for-landing-zones)
 
-- **Summary:**
-- **What a landing zone gives you (baseline, networking, identity hooks):**
-- **Remember for the exam:**
+Background: [Azure landing zones (Cloud Adoption Framework)](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/), [implementation options / accelerator](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/implementation-options), [transition existing to landing zones](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/enterprise-scale/transition).
+
+### In plain terms
+
+An **Azure landing zone** is a **ready** **foundation** for running workloads in Azure—**identity**, **network/connectivity**, **governance (Policy)**, **management/monitoring**, and **subscription/MG structure** are in place **before** (or as part of) moving or building apps. The module uses a **utilities before houses** analogy: like water/power to a lot before construction, **platform services** should be available so migrations and new apps are **consistent** and **compliant**.
+
+### Things to know (characteristics)
+
+| Topic | Detail |
+|--------|--------|
+| **Shape** | Implemented via **management groups** and **subscriptions** sized to **business** needs and **priorities** (example pattern in Learn: SAP / Corporate / Online style zones). |
+| **Platform vs application** | **Platform landing zone** — **shared** services (**identity**, **connectivity**, **management** subscriptions), often run by a **central** team. **Application landing zone(s)** — **workloads** / apps, commonly across **dev / test / production**. |
+| **Policy** | **Azure Policy** ties to landing zones to keep the **platform** (and apps on it) **compliant** over time. |
+| **Automation** | Landing zones are **provisioned with code** (repeatable, versionable). |
+| **Scale** | Can span **migrations** and **new** development across the **portfolio**, not only one project. |
+| **Accelerator** | Microsoft recommends the **Azure landing zone IaC** path (**Bicep** or **Terraform** via **Azure Verified Modules**); a **portal-based** accelerator exists for orgs with less IaC depth. |
+
+### Things to consider (design)
+
+- **Bake landing zones into overall design** — align **subscriptions** with business **scale** and **priorities**; use **Policy** as **guardrails** for platform **and** workloads.
+- **Implement as code** — expect **refactoring** as requirements change; **iterate**; central review of short- vs long-term scenarios reduces rework.
+- **Use the [landing zone accelerator](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/implementation-options)** for an opinionated, full **conceptual** implementation (management groups, policies, key components).
+- **Application-centric** — favor thinking in **applications** and **platform alignment**, not only **VM lift-and-shift**.
+- **Azure-native** — prefer **platform services** where they fit; stay aligned with the **Azure roadmap**.
+- **Migrations and greenfield** — scope so both **move** and **new build** can scale across **IT** broadly.
+- **Existing Azure estates** — you can **transition** toward landing zones; one pattern is deploying the accelerator **in parallel** in the **same** Microsoft Entra **tenant** with a **new** management group tree that **does not** disturb the current environment initially ([transition guidance](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/enterprise-scale/transition)).
+
+**Optional assessment:** Microsoft points to an [Azure landing zone review](https://learn.microsoft.com/en-us/assessments/?mode=pre-assessment&id=21765fea-dfe6-4bc4-8bb7-db9df5a6f6c0) for organizations planning cloud build/migrate (module note: oriented toward more experienced customers; useful to spot investment areas if newer).
+
+### Your notes (optional)
+
+- **Platform vs app** subscriptions we’d want in our org:
+
+### Remember for the exam
+
+- Landing zone = **foundational** **environment** (MG/sub design + shared **platform** + **app** zones).
+- **Platform** LZ (shared identity, connectivity, management) vs **application** LZ (workloads, envs).
+- **Policy** + **code-first** deployment; **accelerator** (IaC / portal) as the supported implementation path.
+- **Parallel** deploy + **transition** for brownfield Azure.
 
 ---
 
